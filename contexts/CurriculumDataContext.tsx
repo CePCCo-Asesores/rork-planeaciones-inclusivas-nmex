@@ -6,7 +6,12 @@ type RawGistStructure = {
   [grado: string]: {
     [campoFormativo: string]: {
       contenidos: string[];
-      pda: string[];
+      // En el JSON digerido puede venir directamente byContenido
+      byContenido?: {
+        [contenido: string]: string[];
+      };
+      // O puede venir un arreglo paralelo a contenidos, cuyos elementos pueden ser string o string[]
+      pda?: Array<string | string[]>;
     };
   };
 };
@@ -73,8 +78,19 @@ function transformGistData(rawData: RawGistStructure): TransformedDataStructure 
         return;
       }
 
-      const pdaArray = campoData.pda || [];
       const contenidosArray = campoData.contenidos;
+
+      // Si el JSON ya trae byContenido, úsalo directamente
+      if (campoData.byContenido && typeof campoData.byContenido === 'object') {
+        console.log(`   ✅ Using provided byContenido for ${gradoKey}/${campoFormativo}`);
+        transformed[gradoKey][campoFormativo] = {
+          contenidos: contenidosArray,
+          byContenido: campoData.byContenido,
+        };
+        return;
+      }
+
+      const pdaArray = (campoData.pda ?? []) as Array<string | string[]>;
 
       console.log(`   📊 Campo: ${campoFormativo}`);
       console.log(`      Contenidos: ${contenidosArray.length}`);
@@ -83,7 +99,10 @@ function transformGistData(rawData: RawGistStructure): TransformedDataStructure 
         console.log(`      Primer contenido: "${contenidosArray[0].substring(0, 50)}..."`);
       }
       if (pdaArray.length > 0) {
-        console.log(`      Primer PDA: "${pdaArray[0].substring(0, 50)}..."`);
+        const firstPda = pdaArray[0];
+        console.log(
+          `      Primer PDA: "${Array.isArray(firstPda) ? (firstPda[0] ?? '').toString().substring(0, 50) : (firstPda ?? '').toString().substring(0, 50)}..."`
+        );
       }
 
       const byContenido: { [contenido: string]: string[] } = {};
@@ -91,13 +110,21 @@ function transformGistData(rawData: RawGistStructure): TransformedDataStructure 
       contenidosArray.forEach((contenido, index) => {
         const pdaSet = new Set<string>();
 
-        if (pdaArray[index]) {
+        const rawEntry = pdaArray[index];
+        if (rawEntry !== undefined) {
           console.log(`         🔗 Contenido[${index}] -> PDA[${index}]`);
           console.log(`            Contenido: "${contenido.substring(0, 40)}..."`);
-          console.log(`            PDA raw: "${pdaArray[index].substring(0, 40)}..."`);
-          const pdaIndividuales = separarPDAs(pdaArray[index]);
-          console.log(`            PDA split: ${pdaIndividuales.length} items`);
-          pdaIndividuales.forEach(pda => pdaSet.add(pda));
+          if (Array.isArray(rawEntry)) {
+            console.log(`            PDA entry is array with ${rawEntry.length} items`);
+            rawEntry.forEach(p => {
+              if (typeof p === 'string' && p.trim()) pdaSet.add(p.trim());
+            });
+          } else if (typeof rawEntry === 'string') {
+            console.log(`            PDA raw string: "${rawEntry.substring(0, 40)}..."`);
+            const pdaIndividuales = separarPDAs(rawEntry);
+            console.log(`            PDA split: ${pdaIndividuales.length} items`);
+            pdaIndividuales.forEach(pda => pdaSet.add(pda));
+          }
         } else {
           console.warn(`         ⚠️ Contenido[${index}] NO tiene PDA en index ${index}`);
         }
@@ -274,24 +301,22 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
         return;
       }
       
-      console.log(`   ✅ Found ${pdaDeEsteContenido.length} PDA cadena(s)`);
+      console.log(`   ✅ Found ${pdaDeEsteContenido.length} PDA item(s)`);
       totalPdaCadenasFound += pdaDeEsteContenido.length;
       
-      pdaDeEsteContenido.forEach((cadena, cadenaIndex) => {
-        console.log(`   📄 Cadena ${cadenaIndex + 1}: "${cadena.substring(0, 80)}..."`);
-        const pdaIndividuales = separarPDAs(cadena);
-        console.log(`      ➡️ Split into ${pdaIndividuales.length} individual PDA(s)`);
-        
-        pdaIndividuales.forEach(pda => {
-          const wasNew = !pdaSet.has(pda);
-          pdaSet.add(pda);
-          if (wasNew) {
-            totalPdaIndividualesFound++;
-            console.log(`      ✨ New PDA added: "${pda.substring(0, 60)}..."`);
-          } else {
-            console.log(`      🔁 Duplicate PDA (skipped): "${pda.substring(0, 60)}..."`);
-          }
-        });
+      pdaDeEsteContenido.forEach((pda, cadenaIndex) => {
+        const text = typeof pda === 'string' ? pda : String(pda);
+        const trimmed = text.trim();
+        if (!trimmed) return;
+        console.log(`   📄 PDA ${cadenaIndex + 1}: "${trimmed.substring(0, 80)}..."`);
+        const wasNew = !pdaSet.has(trimmed);
+        pdaSet.add(trimmed);
+        if (wasNew) {
+          totalPdaIndividualesFound++;
+          console.log(`      ✨ New PDA added`);
+        } else {
+          console.log(`      🔁 Duplicate PDA (skipped)`);
+        }
       });
     });
 
