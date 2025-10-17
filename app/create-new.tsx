@@ -92,6 +92,7 @@ export default function CreateNewLessonPlanScreen() {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔄 Grado changed, clearing cascade: Campos, Contenidos, PDA');
     setForm(prev => ({
       ...prev,
       camposFormativos: [],
@@ -99,6 +100,23 @@ export default function CreateNewLessonPlanScreen() {
       pda: [],
     }));
   }, [form.nivelEducativo, form.grado]);
+
+  useEffect(() => {
+    console.log('🔄 Campos changed, clearing cascade: Contenidos, PDA');
+    setForm(prev => ({
+      ...prev,
+      contenidos: [],
+      pda: [],
+    }));
+  }, [form.camposFormativos.join('|')]);
+
+  useEffect(() => {
+    console.log('🔄 Contenidos changed, clearing cascade: PDA');
+    setForm(prev => ({
+      ...prev,
+      pda: [],
+    }));
+  }, [form.contenidos.map(c => `${c.campo}:${c.contenido}`).join('|')]);
 
   const gradosDisponibles = useMemo(() => {
     return GRADOS_POR_NIVEL[form.nivelEducativo] || [];
@@ -131,6 +149,7 @@ export default function CreateNewLessonPlanScreen() {
   const isCampoMultiple = form.modalidad === 'Por Proyecto';
 
   const handleToggleCampoFormativo = (campo: string) => {
+    console.log('👆 Campo formativo toggled:', campo);
     if (isCampoMultiple) {
       setForm(prev => ({
         ...prev,
@@ -148,6 +167,7 @@ export default function CreateNewLessonPlanScreen() {
   };
 
   const handleToggleContenido = (item: ContenidoConCampo) => {
+    console.log('👆 Contenido toggled:', { campo: item.campo, contenido: item.contenido.substring(0, 50) });
     setForm(prev => {
       const exists = prev.contenidos.some(c => c.contenido === item.contenido && c.campo === item.campo);
       return {
@@ -155,7 +175,6 @@ export default function CreateNewLessonPlanScreen() {
         contenidos: exists
           ? prev.contenidos.filter(c => !(c.contenido === item.contenido && c.campo === item.campo))
           : [...prev.contenidos, item],
-        pda: [],
       };
     });
   };
@@ -379,7 +398,15 @@ export default function CreateNewLessonPlanScreen() {
                           nivel === form.nivelEducativo && { backgroundColor: colors.primary + '20' }
                         ]}
                         onPress={() => {
-                          setForm({ ...form, nivelEducativo: nivel, grado: '1' });
+                          console.log('🎯 Nivel changed to:', nivel);
+                          setForm(prev => ({ 
+                            ...prev, 
+                            nivelEducativo: nivel, 
+                            grado: '1',
+                            camposFormativos: [],
+                            contenidos: [],
+                            pda: [],
+                          }));
                           setShowNivelPicker(false);
                         }}
                       >
@@ -417,7 +444,14 @@ export default function CreateNewLessonPlanScreen() {
                           grado === form.grado && { backgroundColor: colors.primary + '20' }
                         ]}
                         onPress={() => {
-                          setForm({ ...form, grado });
+                          console.log('🎯 Grado changed to:', grado);
+                          setForm(prev => ({ 
+                            ...prev, 
+                            grado,
+                            camposFormativos: [],
+                            contenidos: [],
+                            pda: [],
+                          }));
                           setShowGradoPicker(false);
                         }}
                       >
