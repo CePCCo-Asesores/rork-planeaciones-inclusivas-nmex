@@ -2,21 +2,13 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
-interface CurriculumDataItem {
-  nivel: string;
-  grado: string;
-  campoFormativo: string;
-  contenido: string;
-  pda: string[];
-}
-
-type CurriculumDataStructure = CurriculumDataItem[];
-
 type RawDataStructure = {
   [grado: string]: {
     [campoFormativo: string]: {
       contenidos: string[];
-      pda: { [key: string]: string }[];
+      byContenido: {
+        [contenido: string]: string[];
+      };
     };
   };
 };
@@ -24,7 +16,7 @@ type RawDataStructure = {
 const GIST_URL = 'https://gist.githubusercontent.com/CePCCo-Asesores/1b5c2b801574343fcfe845c24a4c719c/raw/0f22147487eee721d9c065b5f643c3e9712f9c09/CON_PLAN.JSON';
 
 export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() => {
-  const { data, isLoading, error } = useQuery<CurriculumDataStructure>({
+  const { data, isLoading, error } = useQuery<RawDataStructure>({
     queryKey: ['curriculumData'],
     queryFn: async () => {
       try {
@@ -40,60 +32,14 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
         
         if (typeof rawData !== 'object' || Array.isArray(rawData)) {
           console.error('Invalid data structure: expected object, got:', typeof rawData);
-          return [];
+          throw new Error('Invalid data structure: expected object');
         }
 
-        const transformedData: CurriculumDataItem[] = [];
-        
-        Object.entries(rawData).forEach(([grado, camposData]) => {
-          console.log(`Processing grado: ${grado}`);
-          
-          Object.entries(camposData).forEach(([campoFormativo, campoData]) => {
-            console.log(`  Processing campo: ${campoFormativo}`);
-            
-            const contenidos = campoData.contenidos || [];
-            const pdaObjects = campoData.pda || [];
-            
-            contenidos.forEach((contenido) => {
-              const pdaStrings: string[] = [];
-              
-              pdaObjects.forEach((pdaObj) => {
-                Object.values(pdaObj).forEach((value) => {
-                  if (typeof value === 'string') {
-                    pdaStrings.push(value);
-                  }
-                });
-              });
-              
-              let nivel = 'Primaria';
-              const gradoNum = parseInt(grado);
-              if (gradoNum >= 1 && gradoNum <= 3) {
-                nivel = 'Preescolar';
-              } else if (gradoNum >= 4 && gradoNum <= 9) {
-                nivel = 'Primaria';
-                grado = String(gradoNum - 3);
-              } else if (gradoNum >= 10 && gradoNum <= 12) {
-                nivel = 'Secundaria';
-                grado = String(gradoNum - 9);
-              }
-              
-              transformedData.push({
-                nivel,
-                grado,
-                campoFormativo: campoFormativo.toUpperCase(),
-                contenido,
-                pda: pdaStrings,
-              });
-            });
-          });
-        });
-
-        console.log('✅ Total transformed items:', transformedData.length);
-        console.log('Sample transformed item:', transformedData[0]);
-        return transformedData;
+        console.log('✅ Curriculum data loaded successfully');
+        return rawData;
       } catch (err) {
         console.error('Error fetching curriculum data:', err);
-        return [];
+        throw err;
       }
     },
     staleTime: 1000 * 60 * 60,
@@ -106,27 +52,37 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     console.log('Nivel received:', nivel);
     console.log('Grado received:', grado);
     console.log('Data available:', !!data);
-    console.log('Data is array:', Array.isArray(data));
-    console.log('Data length:', data?.length);
+    console.log('Data is object:', typeof data === 'object');
     
-    if (!Array.isArray(data) || data.length === 0 || campos.length === 0) {
+    if (!data || typeof data !== 'object' || campos.length === 0) {
       console.log('❌ Early return: No data or no campos selected');
       return [];
     }
 
-    const contenidos = data
-      .filter(item => 
-        campos.includes(item.campoFormativo) &&
-        item.nivel === nivel &&
-        item.grado === grado
-      )
-      .map(item => item.contenido);
+    const gradoKey = convertirGradoAKey(nivel, grado);
+    console.log('Grado key:', gradoKey);
+    console.log('Available grados in data:', Object.keys(data));
+    
+    if (!data[gradoKey]) {
+      console.log('❌ No data for grado:', gradoKey);
+      return [];
+    }
 
-    const uniqueContenidos = Array.from(new Set(contenidos));
+    const contenidosSet = new Set<string>();
+    
+    campos.forEach(campo => {
+      const campoData = data[gradoKey]?.[campo];
+      console.log(`Campo "${campo}" data:`, campoData);
+      
+      if (campoData && campoData.contenidos) {
+        campoData.contenidos.forEach(contenido => contenidosSet.add(contenido));
+      }
+    });
 
-    console.log('✅ Total contenidos extracted:', uniqueContenidos.length);
-    console.log('Contenidos:', uniqueContenidos);
-    return uniqueContenidos;
+    const result = Array.from(contenidosSet);
+    console.log('✅ Total contenidos extracted:', result.length);
+    console.log('Contenidos:', result);
+    return result;
   }, [data]);
 
   const getPDAByContenidos = useCallback((campos: string[], contenidos: string[], nivel: string, grado: string): string[] => {
@@ -137,34 +93,61 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     console.log('Grado received:', grado);
     console.log('Data available:', !!data);
     
-    if (!Array.isArray(data) || data.length === 0 || campos.length === 0 || contenidos.length === 0) {
+    if (!data || typeof data !== 'object' || campos.length === 0 || contenidos.length === 0) {
       console.log('❌ Early return: No data or no selection', { 
         hasData: !!data,
-        isArray: Array.isArray(data),
+        isObject: typeof data === 'object',
         camposCount: campos.length, 
         contenidosCount: contenidos.length 
       });
       return [];
     }
 
-    const pdaList = data
-      .filter(item => 
-        campos.includes(item.campoFormativo) && 
-        contenidos.includes(item.contenido) &&
-        item.nivel === nivel &&
-        item.grado === grado
-      )
-      .flatMap(item => item.pda || []);
+    const gradoKey = convertirGradoAKey(nivel, grado);
+    console.log('Grado key:', gradoKey);
+    
+    if (!data[gradoKey]) {
+      console.log('❌ No data for grado:', gradoKey);
+      return [];
+    }
 
-    const uniquePDAs = Array.from(new Set(pdaList));
+    const pdaSet = new Set<string>();
+    
+    campos.forEach(campo => {
+      const campoData = data[gradoKey]?.[campo];
+      
+      if (campoData && campoData.byContenido) {
+        contenidos.forEach(contenido => {
+          const pdaDeEsteContenido = campoData.byContenido[contenido] || [];
+          console.log(`PDAs for campo "${campo}" contenido "${contenido}":`, pdaDeEsteContenido);
+          pdaDeEsteContenido.forEach(pda => pdaSet.add(pda));
+        });
+      }
+    });
 
-    console.log('✅ Total PDAs extracted:', uniquePDAs.length);
-    console.log('PDAs:', uniquePDAs);
-    return uniquePDAs;
+    const result = Array.from(pdaSet).sort();
+    console.log('✅ Total PDAs extracted:', result.length);
+    console.log('PDAs:', result);
+    return result;
   }, [data]);
 
+  function convertirGradoAKey(nivel: string, grado: string): string {
+    const gradoNum = parseInt(grado);
+    
+    switch (nivel) {
+      case 'Preescolar':
+        return String(gradoNum);
+      case 'Primaria':
+        return String(gradoNum + 3);
+      case 'Secundaria':
+        return String(gradoNum + 9);
+      default:
+        return grado;
+    }
+  }
+
   const contextValue = useMemo(() => ({
-    data: data || [],
+    data: data || {} as RawDataStructure,
     isLoading,
     error,
     getContenidosByCampos,
