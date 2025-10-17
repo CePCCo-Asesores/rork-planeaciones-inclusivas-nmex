@@ -14,6 +14,7 @@ export interface LessonPlan {
   evaluation: string;
   inclusiveAdaptations: string;
   notes: string;
+  generatedContent: string;
   createdAt: string;
   updatedAt: string;
 }

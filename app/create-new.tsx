@@ -12,12 +12,15 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { generateText } from '@rork/toolkit-sdk';
 import { Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurriculumData } from '@/contexts/CurriculumDataContext';
+import { useLessonPlans } from '@/contexts/LessonPlansContext';
 import { CAMPOS_FORMATIVOS_POR_NIVEL, ESTRATEGIAS_EVALUACION } from '@/constants/camposFormativos';
 import { GRADOS_POR_NIVEL } from '@/types/user';
+import { buildMasterPrompt } from '@/constants/masterPrompt';
 
 type Modalidad = 'Secuencial' | 'Por Proyecto';
 
@@ -44,6 +47,7 @@ export default function CreateNewLessonPlanScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { getContenidosByCampos, getPDAByContenidos } = useCurriculumData();
+  const { addLessonPlan } = useLessonPlans();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [form, setForm] = useState<FormData>({
@@ -196,19 +200,105 @@ export default function CreateNewLessonPlanScreen() {
       return;
     }
 
-    setIsGenerating(true);
-
-    setTimeout(() => {
-      setIsGenerating(false);
-      const message = 'Planeación generada correctamente';
+    if (!form.numeroSesiones || parseInt(form.numeroSesiones) <= 0) {
+      const message = 'Por favor ingresa un número válido de sesiones';
       if (Platform.OS === 'web') {
         alert(message);
       } else {
-        Alert.alert('Éxito', message, [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
+        Alert.alert('Campo requerido', message);
       }
-    }, 2000);
+      return;
+    }
+
+    if (!form.duracionSesion || parseInt(form.duracionSesion) <= 0) {
+      const message = 'Por favor ingresa una duración válida para las sesiones';
+      if (Platform.OS === 'web') {
+        alert(message);
+      } else {
+        Alert.alert('Campo requerido', message);
+      }
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      console.log('🚀 Iniciando generación de planeación...');
+      
+      const masterPrompt = buildMasterPrompt({
+        nombreDocente: form.nombreDocente,
+        nombreEscuela: form.nombreEscuela,
+        periodoPlaneado: form.periodoPlaneado,
+        nivelEducativo: form.nivelEducativo,
+        grado: form.grado,
+        modalidad: form.modalidad,
+        camposFormativos: form.camposFormativos,
+        temaDetonador: form.temaDetonador,
+        contenidos: form.contenidos,
+        pda: form.pda,
+        numeroSesiones: form.numeroSesiones,
+        duracionSesion: form.duracionSesion,
+        estrategiasEvaluacion: form.estrategiasEvaluacion,
+        recursosDisponibles: form.recursosDisponibles,
+      });
+      
+      console.log('📝 Prompt construido, longitud:', masterPrompt.length);
+
+      const generatedContent = await generateText(masterPrompt);
+      console.log('✅ Contenido generado, longitud:', generatedContent.length);
+
+      const newLessonPlan = addLessonPlan({
+        title: `${form.temaDetonador} - ${form.nivelEducativo} ${form.grado}`,
+        grade: `${form.nivelEducativo} ${form.grado}`,
+        subject: form.camposFormativos.join(', '),
+        campoFormativo: form.camposFormativos.join(', '),
+        ejeArticulador: '',
+        contenidos: form.contenidos.join(', '),
+        procesoDesarrollo: form.pda.join(', '),
+        duration: `${form.numeroSesiones} sesiones de ${form.duracionSesion} minutos`,
+        objectives: form.temaDetonador,
+        activities: generatedContent,
+        materials: form.recursosDisponibles,
+        evaluation: form.estrategiasEvaluacion.join(', '),
+        inclusiveAdaptations: 'Incluidas en el documento',
+        notes: `Modalidad: ${form.modalidad}`,
+        generatedContent: generatedContent,
+      });
+
+      console.log('💾 Planeación guardada con ID:', newLessonPlan.id);
+
+      setIsGenerating(false);
+
+      if (Platform.OS === 'web') {
+        alert('Planeación generada correctamente');
+        router.push(`/result/${newLessonPlan.id}`);
+      } else {
+        Alert.alert(
+          '¡Éxito!',
+          'Planeación generada correctamente',
+          [
+            {
+              text: 'Ver Resultado',
+              onPress: () => router.push(`/result/${newLessonPlan.id}`),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error generating lesson plan:', error);
+      setIsGenerating(false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      if (Platform.OS === 'web') {
+        alert(`Error al generar la planeación: ${errorMessage}`);
+      } else {
+        Alert.alert(
+          'Error',
+          `No se pudo generar la planeación: ${errorMessage}`,
+          [{ text: 'OK' }]
+        );
+      }
+    }
   };
 
   return (
