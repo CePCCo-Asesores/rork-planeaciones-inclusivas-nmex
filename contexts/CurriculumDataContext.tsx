@@ -25,21 +25,35 @@ type TransformedDataStructure = {
 function separarPDAs(cadenaDeTexto: string): string[] {
   if (!cadenaDeTexto || typeof cadenaDeTexto !== 'string') return [];
 
+  console.log('🔪 separarPDAs input:', cadenaDeTexto.substring(0, 100) + '...');
+
   if (cadenaDeTexto.includes('(1)') || cadenaDeTexto.includes('(2)')) {
-    return cadenaDeTexto.split(/\(\d+\)\s*/).filter(texto => texto.trim());
+    const partes = cadenaDeTexto.split(/\(\d+\)\s*/).filter(texto => texto.trim().length > 0);
+    console.log(`   ✂️ Split by (1), (2): ${partes.length} partes`);
+    partes.forEach((parte, i) => {
+      console.log(`      [${i}] "${parte.substring(0, 60)}..."`);
+    });
+    return partes;
   }
 
-  const oraciones = cadenaDeTexto.split(/\.\s+(?=[A-Z])/).filter(texto => texto.trim());
+  const oraciones = cadenaDeTexto.split(/\.\s+(?=[A-Z])/).filter(texto => texto.trim().length > 0);
+  console.log(`   ✂️ Split by sentence: ${oraciones.length} oraciones`);
+  
   if (oraciones.length > 1) {
-    return oraciones.map((oracion, index) => {
+    const resultado = oraciones.map((oracion, index) => {
       const oracionLimpia = oracion.trim();
       if (index < oraciones.length - 1 && !oracionLimpia.endsWith('.')) {
         return oracionLimpia + '.';
       }
       return oracionLimpia;
     });
+    resultado.forEach((oracion, i) => {
+      console.log(`      [${i}] "${oracion.substring(0, 60)}..."`);
+    });
+    return resultado;
   }
 
+  console.log('   ℹ️ No split needed, returning original');
   return [cadenaDeTexto.trim()];
 }
 
