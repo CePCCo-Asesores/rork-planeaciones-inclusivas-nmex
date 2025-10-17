@@ -120,7 +120,7 @@ function transformGistData(rawData: RawGistStructure): TransformedDataStructure 
   return transformed;
 }
 
-const GIST_URL = 'https://gist.githubusercontent.com/CePCCo-Asesores/1b5c2b801574343fcfe845c24a4c719c/raw/0f22147487eee721d9c065b5f643c3e9712f9c09/CON_PLAN.JSON';
+const GIST_URL = 'https://gist.githubusercontent.com/CePCCo-Asesores/5bee76f53b4251b8e99a0def8108eb11/raw/669fb6ec6f1c7512dba03bbc750300e817b062ab/CON_PLAN.JSON';
 
 export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() => {
   const { data, isLoading, error } = useQuery<TransformedDataStructure>({
