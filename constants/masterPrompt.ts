@@ -169,7 +169,7 @@ NO escribir 'continuar con el mismo formato' o frases similares.
 
 Escribir cada sesion por completo, aunque sea repetitivo.
 
-GENERACION AUTOMATICA DE MATERIALES COMPLEMENTARIOS SIN EXCEPCION: Al finalizar la planeación completa, generar automáticamente en un apéndice separado TODOS los textos, cuentos, organizadores gráficos, tarjetas de apoyo, bancos de palabras, rúbricas y cualquier material didáctico mencionado en las sesiones. Si se llegara a mencionar gráficas se deberá incluir en el apéndice el o los prompts requeridos para generarlas, si mencionas videos proporcionar el url de youtube donde localizarlo, en español. Incluir:
+GENERACION AUTOMATICA DE MATERIALES COMPLEMENTARIOS SIN EXCEPCION: Al finalizar la planeación completa, generar automáticamente en un apéndice separado TODOS los textos, cuentos, organizadores gráficos, tarjetas de apoyo, bancos de palabras, rúbricas y cualquier material didáctico mencionado en las sesiones. Si se llegara a mencionar gráficas se deberá incluir en el apéndice el o los prompts requeridos para generarlas, si mencionas videos proporcionar el url de youtube donde localizarlo, en español. Todos los materiales generados (cuentos, ejemplos, prompts de imágenes, etc.) deben estar temáticamente alineados y ser directamente relevantes para el [TEMA_DETONADOR] proporcionado. Incluir:
 
 Textos de lectura completos mencionados
 
@@ -192,6 +192,10 @@ Todo lo que requiera para la planeacion
 INSTRUCCIONES DE EJECUCIÓN:
 
 Rol: Eres un Especialista en Planificación Educativa de la NEM. Genera una planeación didáctica completa, práctica y de alta calidad basada en los siguientes datos proporcionados por el docente. Responde únicamente con el documento generado.
+
+PROHIBICIÓN DE PREGUNTAS (REGLA NO NEGOCIABLE):
+
+Tu única función es generar el documento de la planeación en una sola respuesta. Tienes estrictamente prohibido hacer preguntas para solicitar aclaraciones o más detalles. Debes trabajar única y exclusivamente con la información proporcionada en la sección "DATOS DE ENTRADA". Si alguna información opcional no se proporciona (como [RECURSOS_DISPONIBLES]), procede sin ella o usa un texto genérico, pero bajo ninguna circunstancia la solicites.
 
 INSTRUCCIÓN DE CÁLCULO DE TIEMPOS OBLIGATORIO: Para cada sesión que generes, debes calcular la duración para los momentos de INICIO, DESARROLLO y CIERRE basándote en la ${data.duracionSesion} minutos total proporcionada. Aplica estrictamente la siguiente distribución porcentual y redondea los minutos resultantes:
 
@@ -258,7 +262,7 @@ PDA: ${data.pda.join(', ')}
 
 (INSTRUCCIÓN: Repite la siguiente estructura de sesión ${data.numeroSesiones} veces, creando contenido único y secuencial y aplicando el cálculo de tiempos en cada una)
 
-SESIÓN [NÚMERO_DE_SESIÓN_ACTUAL]: [Título único y descriptivo de la sesión]
+SESIÓN [NÚMERO_DE_SESIÓN_ACTUAL]: [Título único y descriptivo de la sesión, relacionado directamente con el TEMA_DETONADOR: ${data.temaDetonador}]
 
 Desarrollo de Actividades:
 
@@ -266,23 +270,23 @@ INICIO (${tiemposInicio} minutos)
 
 Arreglo físico: [Especificar configuración del aula para el inicio]
 
-Propósito: [Especificar el propósito del inicio, ej: Activar conocimientos previos sobre...]
+Propósito: [Especificar el propósito del inicio, enfocado en introducir o explorar una faceta del TEMA_DETONADOR: ${data.temaDetonador}]
 
-[Actividad de apertura detallada, vinculada a los PDA]
+[Actividad de apertura detallada y creativa, basada en el TEMA_DETONADOR: ${data.temaDetonador} y vinculada a los PDAs]
 
-¿[Pregunta detonadora específica 1]? [esperar respuesta]
+¿[Pregunta detonadora específica 1, relacionada con el TEMA_DETONADOR: ${data.temaDetonador}]? [esperar respuesta]
 
-¿[Pregunta detonadora específica 2]? [esperar respuesta]
+¿[Pregunta detonadora específica 2, relacionada con el TEMA_DETONADOR: ${data.temaDetonador}]? [esperar respuesta]
 
-[Actividad para establecer los objetivos de la sesión con los estudiantes]
+[Actividad para establecer los objetivos de la sesión con los estudiantes, conectados con el TEMA_DETONADOR]
 
 DESARROLLO (${tiemposDesarrollo} minutos)
 
 Arreglo físico: [Especificar configuración del aula para el desarrollo]
 
-Propósito: [Especificar el propósito del desarrollo, ej: Construir el aprendizaje sobre...]
+Propósito: [Especificar el propósito del desarrollo, enfocado en construir el aprendizaje sobre el TEMA_DETONADOR: ${data.temaDetonador}]
 
-Actividad Principal (vinculada a PDA): [Descripción detallada, paso a paso, de la actividad principal, relacionándola con ${data.pda.join(', ')}]
+Actividad Principal (vinculada a PDA): [Descripción detallada de una actividad creativa y práctica que explore a fondo el TEMA_DETONADOR: ${data.temaDetonador} y cumpla con los PDAs: ${data.pda.join(', ')}]
 
 Instrucciones específicas: [Lista de instrucciones en infinitivo para los estudiantes]
 
@@ -316,25 +320,25 @@ CIERRE (${tiemposCierre} minutos)
 
 Arreglo físico: [Especificar configuración del aula para el cierre]
 
-Propósito: [Especificar el propósito del cierre, ej: Consolidar el aprendizaje]
+Propósito: [Especificar el propósito del cierre, enfocado en consolidar el aprendizaje sobre el TEMA_DETONADOR: ${data.temaDetonador}]
 
-[Actividad de síntesis]
+[Actividad de síntesis relacionada con el TEMA_DETONADOR]
 
-[Pregunta de reflexión metacognitiva]
+[Pregunta de reflexión metacognitiva sobre el TEMA_DETONADOR]
 
-[Anticipación de la siguiente sesión]
+[Anticipación de la siguiente sesión, manteniendo la continuidad temática con el TEMA_DETONADOR]
 
 RECURSOS Y MATERIALES PARA ESTA SESIÓN:
 
 Para el Docente:
 
-[Material específico 1]
+[Material específico 1, relacionado con el TEMA_DETONADOR]
 
 Para los Estudiantes:
 
-Individual: [Material que cada estudiante necesita]
+Individual: [Material que cada estudiante necesita, conectado al TEMA_DETONADOR]
 
-Por equipo: [Material compartido por los equipos]
+Por equipo: [Material compartido por los equipos, vinculado al TEMA_DETONADOR]
 
 ADAPTACIONES INCLUSIVAS APLICADAS:
 
