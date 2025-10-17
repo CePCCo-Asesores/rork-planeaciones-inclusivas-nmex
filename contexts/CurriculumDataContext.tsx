@@ -2,7 +2,16 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
-type RawDataStructure = {
+type RawGistStructure = {
+  [grado: string]: {
+    [campoFormativo: string]: {
+      contenidos: string[];
+      pda: string[];
+    };
+  };
+};
+
+type TransformedDataStructure = {
   [grado: string]: {
     [campoFormativo: string]: {
       contenidos: string[];
@@ -13,32 +22,99 @@ type RawDataStructure = {
   };
 };
 
+function separarPDAs(cadenaDeTexto: string): string[] {
+  if (!cadenaDeTexto || typeof cadenaDeTexto !== 'string') return [];
+
+  if (cadenaDeTexto.includes('(1)') || cadenaDeTexto.includes('(2)')) {
+    return cadenaDeTexto.split(/\(\d+\)\s*/).filter(texto => texto.trim());
+  }
+
+  const oraciones = cadenaDeTexto.split(/\.\s+(?=[A-Z])/).filter(texto => texto.trim());
+  if (oraciones.length > 1) {
+    return oraciones.map((oracion, index) => {
+      const oracionLimpia = oracion.trim();
+      if (index < oraciones.length - 1 && !oracionLimpia.endsWith('.')) {
+        return oracionLimpia + '.';
+      }
+      return oracionLimpia;
+    });
+  }
+
+  return [cadenaDeTexto.trim()];
+}
+
+function transformGistData(rawData: RawGistStructure): TransformedDataStructure {
+  console.log('🔄 Transforming Gist data...');
+  const transformed: TransformedDataStructure = {};
+
+  Object.keys(rawData).forEach(gradoKey => {
+    transformed[gradoKey] = {};
+    const gradoData = rawData[gradoKey];
+
+    Object.keys(gradoData).forEach(campoFormativo => {
+      const campoData = gradoData[campoFormativo];
+      
+      if (!campoData.contenidos || !Array.isArray(campoData.contenidos)) {
+        console.warn(`⚠️ No contenidos array for ${gradoKey}/${campoFormativo}`);
+        return;
+      }
+
+      const pdaArray = campoData.pda || [];
+      const contenidosArray = campoData.contenidos;
+
+      const byContenido: { [contenido: string]: string[] } = {};
+
+      contenidosArray.forEach((contenido, index) => {
+        const pdaSet = new Set<string>();
+
+        if (pdaArray[index]) {
+          const pdaIndividuales = separarPDAs(pdaArray[index]);
+          pdaIndividuales.forEach(pda => pdaSet.add(pda));
+        }
+
+        byContenido[contenido] = Array.from(pdaSet);
+      });
+
+      transformed[gradoKey][campoFormativo] = {
+        contenidos: contenidosArray,
+        byContenido,
+      };
+
+      console.log(`✅ Transformed ${gradoKey}/${campoFormativo}: ${contenidosArray.length} contenidos`);
+    });
+  });
+
+  console.log('✅ Transformation complete');
+  return transformed;
+}
+
 const GIST_URL = 'https://gist.githubusercontent.com/CePCCo-Asesores/1b5c2b801574343fcfe845c24a4c719c/raw/0f22147487eee721d9c065b5f643c3e9712f9c09/CON_PLAN.JSON';
 
 export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() => {
-  const { data, isLoading, error } = useQuery<RawDataStructure>({
+  const { data, isLoading, error } = useQuery<TransformedDataStructure>({
     queryKey: ['curriculumData'],
     queryFn: async () => {
       try {
-        console.log('Fetching curriculum data from:', GIST_URL);
+        console.log('📥 Fetching curriculum data from:', GIST_URL);
         const response = await fetch(GIST_URL);
         if (!response.ok) {
           throw new Error(`Error al cargar datos curriculares: ${response.status}`);
         }
-        const rawData = await response.json() as RawDataStructure;
-        console.log('Raw curriculum data loaded, type:', typeof rawData);
-        console.log('Is object:', typeof rawData === 'object');
-        console.log('Keys:', Object.keys(rawData));
+        const rawData = await response.json() as RawGistStructure;
+        console.log('📦 Raw curriculum data loaded, type:', typeof rawData);
+        console.log('📦 Is object:', typeof rawData === 'object');
+        console.log('📦 Grado keys:', Object.keys(rawData));
         
         if (typeof rawData !== 'object' || Array.isArray(rawData)) {
-          console.error('Invalid data structure: expected object, got:', typeof rawData);
+          console.error('❌ Invalid data structure: expected object, got:', typeof rawData);
           throw new Error('Invalid data structure: expected object');
         }
 
-        console.log('✅ Curriculum data loaded successfully');
-        return rawData;
+        const transformedData = transformGistData(rawData);
+        console.log('✅ Curriculum data loaded and transformed successfully');
+        return transformedData;
       } catch (err) {
-        console.error('Error fetching curriculum data:', err);
+        console.error('❌ Error fetching curriculum data:', err);
         throw err;
       }
     },
@@ -147,7 +223,7 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
   }
 
   const contextValue = useMemo(() => ({
-    data: data || {} as RawDataStructure,
+    data: data || {} as TransformedDataStructure,
     isLoading,
     error,
     getContenidosByCampos,
