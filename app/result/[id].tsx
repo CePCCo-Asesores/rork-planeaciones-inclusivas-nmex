@@ -175,7 +175,11 @@ export default function ResultScreen() {
               onPress={handleCopy}
               disabled={isLoading}
             >
-              {!isPremium && <Lock size={16} color="#FFFFFF" style={styles.lockIcon} />}
+              {!isPremium && (
+                <View style={styles.lockIcon}>
+                  <Lock size={16} color="#FFFFFF" />
+                </View>
+              )}
               <Copy size={20} color="#FFFFFF" />
               <Text style={styles.actionButtonText}>Copiar</Text>
             </TouchableOpacity>
@@ -190,7 +194,11 @@ export default function ResultScreen() {
               onPress={handleDownload}
               disabled={isLoading}
             >
-              {!isPremium && <Lock size={16} color="#FFFFFF" style={styles.lockIcon} />}
+              {!isPremium && (
+                <View style={styles.lockIcon}>
+                  <Lock size={16} color="#FFFFFF" />
+                </View>
+              )}
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
@@ -209,7 +217,11 @@ export default function ResultScreen() {
               onPress={handleShare}
               disabled={isLoading}
             >
-              {!isPremium && <Lock size={16} color="#FFFFFF" style={styles.lockIcon} />}
+              {!isPremium && (
+                <View style={styles.lockIcon}>
+                  <Lock size={16} color="#FFFFFF" />
+                </View>
+              )}
               <Share2 size={20} color="#FFFFFF" />
               <Text style={styles.actionButtonText}>Compartir</Text>
             </TouchableOpacity>
