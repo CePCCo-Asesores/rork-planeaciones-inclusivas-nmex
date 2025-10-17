@@ -139,25 +139,14 @@ export default function CreateNewLessonPlanScreen() {
     }
   };
 
-  const isContenidoMultiple = form.modalidad === 'Por Proyecto';
-
   const handleToggleContenido = (contenido: string) => {
-    if (isContenidoMultiple) {
-      setForm(prev => ({
-        ...prev,
-        contenidos: prev.contenidos.includes(contenido)
-          ? prev.contenidos.filter(c => c !== contenido)
-          : [...prev.contenidos, contenido],
-        pda: [],
-      }));
-    } else {
-      setForm(prev => ({
-        ...prev,
-        contenidos: [contenido],
-        pda: [],
-      }));
-      setShowContenidosPicker(false);
-    }
+    setForm(prev => ({
+      ...prev,
+      contenidos: prev.contenidos.includes(contenido)
+        ? prev.contenidos.filter(c => c !== contenido)
+        : [...prev.contenidos, contenido],
+      pda: [],
+    }));
   };
 
   const handleTogglePDA = (pda: string) => {
@@ -448,7 +437,7 @@ export default function CreateNewLessonPlanScreen() {
                 </Text>
               </TouchableOpacity>
               {showCamposPicker && (
-                <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <ScrollView style={[styles.pickerDropdownScrollable, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   {camposFormativosDisponibles.map((campo) => (
                     <TouchableOpacity
                       key={campo}
@@ -467,7 +456,7 @@ export default function CreateNewLessonPlanScreen() {
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               )}
             </View>
           </View>
@@ -478,8 +467,7 @@ export default function CreateNewLessonPlanScreen() {
 
               <View style={styles.inputContainer}>
                 <Text style={[styles.label, { color: colors.text }]}>
-                  Contenidos {contenidosDisponibles.length > 0 && `(${contenidosDisponibles.length} disponibles)`}
-                  {isContenidoMultiple ? ' - Selección múltiple' : ' - Selección única'}
+                  Contenidos {contenidosDisponibles.length > 0 && `(${contenidosDisponibles.length} disponibles) - Selección múltiple`}
                 </Text>
                 <TouchableOpacity
                   testID="contenidos-picker"
@@ -491,14 +479,12 @@ export default function CreateNewLessonPlanScreen() {
                     {contenidosDisponibles.length === 0
                       ? 'Selecciona primero un campo formativo'
                       : form.contenidos.length > 0
-                        ? isContenidoMultiple
-                          ? `${form.contenidos.length} seleccionados`
-                          : form.contenidos[0]
+                        ? `${form.contenidos.length} seleccionados`
                         : 'Selecciona...'}
                   </Text>
                 </TouchableOpacity>
                 {showContenidosPicker && contenidosDisponibles.length > 0 && (
-                  <ScrollView style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <ScrollView style={[styles.pickerDropdownScrollable, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {contenidosDisponibles.map((contenido, index) => (
                       <TouchableOpacity
                         key={`${contenido}-${index}`}
@@ -541,7 +527,7 @@ export default function CreateNewLessonPlanScreen() {
                     </Text>
                   </TouchableOpacity>
                   {showPDAPicker && pdaDisponibles.length > 0 && (
-                    <ScrollView style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <ScrollView style={[styles.pickerDropdownScrollable, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <TouchableOpacity
                         testID="pda-option-todos"
                         style={[
@@ -733,6 +719,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     maxHeight: 200,
+  },
+  pickerDropdownScrollable: {
+    marginTop: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    maxHeight: 250,
+    zIndex: 50,
+    elevation: 50,
   },
   pickerOption: {
     paddingHorizontal: 12,
