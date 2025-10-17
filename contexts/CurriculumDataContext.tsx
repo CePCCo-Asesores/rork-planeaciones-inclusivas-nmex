@@ -102,12 +102,20 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
         }
         const rawData = await response.json() as RawGistStructure;
         console.log('📦 Raw curriculum data loaded, type:', typeof rawData);
-        console.log('📦 Is object:', typeof rawData === 'object');
-        console.log('📦 Grado keys:', Object.keys(rawData));
+        console.log('📦 Is array:', Array.isArray(rawData));
+        console.log('📦 Is object:', typeof rawData === 'object' && !Array.isArray(rawData));
         
-        if (typeof rawData !== 'object' || Array.isArray(rawData)) {
-          console.error('❌ Invalid data structure: expected object, got:', typeof rawData);
-          throw new Error('Invalid data structure: expected object');
+        if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+          console.error('❌ Invalid data structure: expected object, got:', Array.isArray(rawData) ? 'array' : typeof rawData);
+          throw new Error('Invalid data structure: expected object, got ' + (Array.isArray(rawData) ? 'array' : typeof rawData));
+        }
+        
+        const gradoKeys = Object.keys(rawData);
+        console.log('📦 Grado keys:', gradoKeys);
+        
+        if (gradoKeys.length === 0) {
+          console.error('❌ Empty data structure');
+          throw new Error('Empty data structure');
         }
 
         const transformedData = transformGistData(rawData);

@@ -19,7 +19,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(tabs)' || segments[0] === 'create' || segments[0] === 'create-new' || segments[0] === 'plan';
+    const inAuthGroup = segments[0] === '(tabs)' || segments[0] === 'create' || segments[0] === 'create-new' || segments[0] === 'plan' || segments[0] === 'result';
 
     if (!isAuthenticated && inAuthGroup) {
       router.replace('/welcome' as never);
@@ -37,6 +37,7 @@ function RootLayoutNav() {
       <Stack.Screen name="create" options={{ headerShown: true }} />
       <Stack.Screen name="create-new" options={{ headerShown: true }} />
       <Stack.Screen name="plan/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="result/[id]" options={{ headerShown: true }} />
     </Stack>
   );
 }
