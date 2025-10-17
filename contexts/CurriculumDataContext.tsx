@@ -184,6 +184,7 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
   const getPDAByContenidos = useCallback((contenidosConCampo: Array<{ contenido: string; campo: string }>, nivel: string, grado: string): string[] => {
     console.log('\n=== getPDAByContenidos called ===');
     console.log('📥 Received', contenidosConCampo.length, 'contenidos con campo');
+    console.log('📋 Full contenidos array:', JSON.stringify(contenidosConCampo.map(c => ({ campo: c.campo, contenidoPreview: c.contenido.substring(0, 30) })), null, 2));
     
     if (!data || typeof data !== 'object' || contenidosConCampo.length === 0) {
       console.log('❌ Early return:', { 
@@ -196,6 +197,7 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
 
     const gradoKey = convertirGradoAKey(nivel, grado);
     console.log('🔑 Grado key:', gradoKey);
+    console.log('📂 Available campos in this grado:', Object.keys(data[gradoKey] || {}));
     
     if (!data[gradoKey]) {
       console.log('❌ No data for grado:', gradoKey);
@@ -208,26 +210,35 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     
     contenidosConCampo.forEach(({ contenido, campo }, index) => {
       console.log(`\n🔍 [${index + 1}/${contenidosConCampo.length}] Processing:`);
-      console.log(`   Campo: "${campo}"`);
-      console.log(`   Contenido: "${contenido.substring(0, 60)}..."`);
+      console.log(`   Campo recibido: "${campo}"`);
+      console.log(`   Contenido recibido: "${contenido.substring(0, 60)}..."`);
       
+      console.log(`   🔎 Buscando en: data["${gradoKey}"]["${campo}"]`);
       const campoData = data[gradoKey]?.[campo];
       
       if (!campoData) {
-        console.log(`   ⚠️ No campoData found for campo "${campo}"`);
+        console.log(`   ❌ CRÍTICO: No existe data["${gradoKey}"]["${campo}"]`);
+        console.log(`   Campos disponibles en data["${gradoKey}"]:`, Object.keys(data[gradoKey]));
         return;
       }
+      
+      console.log(`   ✅ Campo encontrado: "${campo}"`);
       
       if (!campoData.byContenido) {
         console.log(`   ⚠️ No byContenido structure in campo "${campo}"`);
         return;
       }
       
+      console.log(`   🔎 Buscando contenido exacto en byContenido...`);
       const pdaDeEsteContenido = campoData.byContenido[contenido];
       
       if (!pdaDeEsteContenido || pdaDeEsteContenido.length === 0) {
-        console.log(`   ⚠️ No PDAs found for this contenido`);
-        console.log(`   Available contenidos in byContenido:`, Object.keys(campoData.byContenido).slice(0, 3));
+        console.log(`   ❌ No se encontró PDA para este contenido específico`);
+        console.log(`   Contenidos disponibles en byContenido (primeros 3):`);
+        Object.keys(campoData.byContenido).slice(0, 3).forEach(key => {
+          console.log(`      - "${key.substring(0, 60)}..."`);
+        });
+        console.log(`   ⚠️ Comparación: contenido buscado = "${contenido.substring(0, 60)}..."`);
         return;
       }
       
