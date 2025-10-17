@@ -12,6 +12,15 @@ interface CurriculumDataItem {
 
 type CurriculumDataStructure = CurriculumDataItem[];
 
+type RawDataStructure = {
+  [grado: string]: {
+    [campoFormativo: string]: {
+      contenidos: string[];
+      pda: { [key: string]: string }[];
+    };
+  };
+};
+
 const GIST_URL = 'https://gist.githubusercontent.com/CePCCo-Asesores/1b5c2b801574343fcfe845c24a4c719c/raw/0f22147487eee721d9c065b5f643c3e9712f9c09/CON_PLAN.JSON';
 
 export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() => {
@@ -24,20 +33,64 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
         if (!response.ok) {
           throw new Error(`Error al cargar datos curriculares: ${response.status}`);
         }
-        const jsonData = await response.json();
-        console.log('Raw curriculum data loaded, type:', typeof jsonData);
-        console.log('Is array:', Array.isArray(jsonData));
-        console.log('Data length:', jsonData?.length);
+        const rawData = await response.json() as RawDataStructure;
+        console.log('Raw curriculum data loaded, type:', typeof rawData);
+        console.log('Is object:', typeof rawData === 'object');
+        console.log('Keys:', Object.keys(rawData));
         
-        if (!Array.isArray(jsonData)) {
-          console.error('Invalid data structure: expected array');
+        if (typeof rawData !== 'object' || Array.isArray(rawData)) {
+          console.error('Invalid data structure: expected object, got:', typeof rawData);
           return [];
         }
 
-        console.log('Sample item:', jsonData[0]);
-        console.log('Total items loaded:', jsonData.length);
+        const transformedData: CurriculumDataItem[] = [];
+        
+        Object.entries(rawData).forEach(([grado, camposData]) => {
+          console.log(`Processing grado: ${grado}`);
+          
+          Object.entries(camposData).forEach(([campoFormativo, campoData]) => {
+            console.log(`  Processing campo: ${campoFormativo}`);
+            
+            const contenidos = campoData.contenidos || [];
+            const pdaObjects = campoData.pda || [];
+            
+            contenidos.forEach((contenido) => {
+              const pdaStrings: string[] = [];
+              
+              pdaObjects.forEach((pdaObj) => {
+                Object.values(pdaObj).forEach((value) => {
+                  if (typeof value === 'string') {
+                    pdaStrings.push(value);
+                  }
+                });
+              });
+              
+              let nivel = 'Primaria';
+              const gradoNum = parseInt(grado);
+              if (gradoNum >= 1 && gradoNum <= 3) {
+                nivel = 'Preescolar';
+              } else if (gradoNum >= 4 && gradoNum <= 9) {
+                nivel = 'Primaria';
+                grado = String(gradoNum - 3);
+              } else if (gradoNum >= 10 && gradoNum <= 12) {
+                nivel = 'Secundaria';
+                grado = String(gradoNum - 9);
+              }
+              
+              transformedData.push({
+                nivel,
+                grado,
+                campoFormativo: campoFormativo.toUpperCase(),
+                contenido,
+                pda: pdaStrings,
+              });
+            });
+          });
+        });
 
-        return jsonData;
+        console.log('✅ Total transformed items:', transformedData.length);
+        console.log('Sample transformed item:', transformedData[0]);
+        return transformedData;
       } catch (err) {
         console.error('Error fetching curriculum data:', err);
         return [];
