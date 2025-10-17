@@ -305,18 +305,14 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
   }, [data]);
 
   function convertirGradoAKey(nivel: string, grado: string): string {
-    const gradoNum = parseInt(grado);
+    console.log('🔑 convertirGradoAKey INPUT:', { nivel, grado });
     
-    switch (nivel) {
-      case 'Preescolar':
-        return String(gradoNum);
-      case 'Primaria':
-        return String(gradoNum + 3);
-      case 'Secundaria':
-        return String(gradoNum + 9);
-      default:
-        return grado;
-    }
+    // El JSON usa directamente el número de grado (1, 2, 3, etc.)
+    // La diferenciación por nivel se hace por los nombres de campos formativos
+    const result = grado;
+    
+    console.log('🔑 convertirGradoAKey OUTPUT:', result);
+    return result;
   }
 
   const contextValue = useMemo(() => ({
