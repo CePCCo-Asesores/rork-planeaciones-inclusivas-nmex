@@ -132,11 +132,9 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
 
   const getContenidosByCampos = useCallback((campos: string[], nivel: string, grado: string): Array<{ contenido: string; campo: string }> => {
     console.log('=== getContenidosByCampos called ===');
-    console.log('Campos received:', campos);
-    console.log('Nivel received:', nivel);
-    console.log('Grado received:', grado);
-    console.log('Data available:', !!data);
-    console.log('Data is object:', typeof data === 'object');
+    console.log('📋 Campos received:', campos);
+    console.log('📚 Nivel received:', nivel);
+    console.log('🎓 Grado received:', grado);
     
     if (!data || typeof data !== 'object' || campos.length === 0) {
       console.log('❌ Early return: No data or no campos selected');
@@ -144,41 +142,51 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     }
 
     const gradoKey = convertirGradoAKey(nivel, grado);
-    console.log('Grado key:', gradoKey);
-    console.log('Available grados in data:', Object.keys(data));
+    console.log('🔑 Grado key calculated:', gradoKey);
+    console.log('📦 Available grados in data:', Object.keys(data));
     
     if (!data[gradoKey]) {
-      console.log('❌ No data for grado:', gradoKey);
+      console.log('❌ No data for grado key:', gradoKey);
       return [];
     }
+
+    console.log('✅ Found data for grado:', gradoKey);
+    console.log('📂 Available campos in grado:', Object.keys(data[gradoKey]));
 
     const contenidosConCampo: Array<{ contenido: string; campo: string }> = [];
     
     campos.forEach(campo => {
+      console.log(`\n🔍 Processing campo: "${campo}"`);
       const campoData = data[gradoKey]?.[campo];
-      console.log(`Campo "${campo}" data:`, campoData);
       
-      if (campoData && campoData.contenidos) {
-        campoData.contenidos.forEach(contenido => {
-          contenidosConCampo.push({ contenido, campo });
-        });
+      if (!campoData) {
+        console.log(`⚠️ No data found for campo "${campo}" in grado ${gradoKey}`);
+        return;
       }
+      
+      if (!campoData.contenidos || !Array.isArray(campoData.contenidos)) {
+        console.log(`⚠️ No contenidos array for campo "${campo}"`);
+        return;
+      }
+      
+      console.log(`📝 Found ${campoData.contenidos.length} contenidos for campo "${campo}"`);
+      
+      campoData.contenidos.forEach((contenido, index) => {
+        contenidosConCampo.push({ contenido, campo });
+        console.log(`  [${index}] Added: "${contenido.substring(0, 50)}..." from campo "${campo}"`);
+      });
     });
 
-    console.log('✅ Total contenidos extracted:', contenidosConCampo.length);
-    console.log('Contenidos con campo:', contenidosConCampo);
+    console.log(`\n✅ Total contenidos extracted: ${contenidosConCampo.length}`);
     return contenidosConCampo;
   }, [data]);
 
   const getPDAByContenidos = useCallback((contenidosConCampo: Array<{ contenido: string; campo: string }>, nivel: string, grado: string): string[] => {
-    console.log('=== getPDAByContenidos called ===');
-    console.log('Contenidos con campo received:', contenidosConCampo);
-    console.log('Nivel received:', nivel);
-    console.log('Grado received:', grado);
-    console.log('Data available:', !!data);
+    console.log('\n=== getPDAByContenidos called ===');
+    console.log('📥 Received', contenidosConCampo.length, 'contenidos con campo');
     
     if (!data || typeof data !== 'object' || contenidosConCampo.length === 0) {
-      console.log('❌ Early return: No data or no selection', { 
+      console.log('❌ Early return:', { 
         hasData: !!data,
         isObject: typeof data === 'object',
         contenidosCount: contenidosConCampo.length 
@@ -187,7 +195,7 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     }
 
     const gradoKey = convertirGradoAKey(nivel, grado);
-    console.log('Grado key:', gradoKey);
+    console.log('🔑 Grado key:', gradoKey);
     
     if (!data[gradoKey]) {
       console.log('❌ No data for grado:', gradoKey);
@@ -195,24 +203,61 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     }
 
     const pdaSet = new Set<string>();
+    let totalPdaCadenasFound = 0;
+    let totalPdaIndividualesFound = 0;
     
-    contenidosConCampo.forEach(({ contenido, campo }) => {
+    contenidosConCampo.forEach(({ contenido, campo }, index) => {
+      console.log(`\n🔍 [${index + 1}/${contenidosConCampo.length}] Processing:`);
+      console.log(`   Campo: "${campo}"`);
+      console.log(`   Contenido: "${contenido.substring(0, 60)}..."`);
+      
       const campoData = data[gradoKey]?.[campo];
       
-      if (campoData && campoData.byContenido) {
-        const pdaDeEsteContenido = campoData.byContenido[contenido] || [];
-        console.log(`PDAs for campo "${campo}" contenido "${contenido}":`, pdaDeEsteContenido);
-        
-        pdaDeEsteContenido.forEach(cadena => {
-          const pdaIndividuales = separarPDAs(cadena);
-          pdaIndividuales.forEach(pda => pdaSet.add(pda));
-        });
+      if (!campoData) {
+        console.log(`   ⚠️ No campoData found for campo "${campo}"`);
+        return;
       }
+      
+      if (!campoData.byContenido) {
+        console.log(`   ⚠️ No byContenido structure in campo "${campo}"`);
+        return;
+      }
+      
+      const pdaDeEsteContenido = campoData.byContenido[contenido];
+      
+      if (!pdaDeEsteContenido || pdaDeEsteContenido.length === 0) {
+        console.log(`   ⚠️ No PDAs found for this contenido`);
+        console.log(`   Available contenidos in byContenido:`, Object.keys(campoData.byContenido).slice(0, 3));
+        return;
+      }
+      
+      console.log(`   ✅ Found ${pdaDeEsteContenido.length} PDA cadena(s)`);
+      totalPdaCadenasFound += pdaDeEsteContenido.length;
+      
+      pdaDeEsteContenido.forEach((cadena, cadenaIndex) => {
+        console.log(`   📄 Cadena ${cadenaIndex + 1}: "${cadena.substring(0, 80)}..."`);
+        const pdaIndividuales = separarPDAs(cadena);
+        console.log(`      ➡️ Split into ${pdaIndividuales.length} individual PDA(s)`);
+        
+        pdaIndividuales.forEach(pda => {
+          const wasNew = !pdaSet.has(pda);
+          pdaSet.add(pda);
+          if (wasNew) {
+            totalPdaIndividualesFound++;
+            console.log(`      ✨ New PDA added: "${pda.substring(0, 60)}..."`);
+          } else {
+            console.log(`      🔁 Duplicate PDA (skipped): "${pda.substring(0, 60)}..."`);
+          }
+        });
+      });
     });
 
     const result = Array.from(pdaSet).sort();
-    console.log('✅ Total PDAs extracted:', result.length);
-    console.log('PDAs:', result);
+    console.log(`\n📊 SUMMARY:`);
+    console.log(`   Total PDA cadenas found: ${totalPdaCadenasFound}`);
+    console.log(`   Total individual PDAs (unique): ${result.length}`);
+    console.log(`\n✅ Returning ${result.length} PDAs`);
+    
     return result;
   }, [data]);
 
