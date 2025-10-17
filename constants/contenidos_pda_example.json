@@ -1,0 +1,35 @@
+[
+  {
+    "nivel": "Primaria",
+    "grado": "1",
+    "campoFormativo": "LENGUAJES",
+    "contenido": "Lectura y escritura de palabras",
+    "pda": [
+      "Identifica y escribe su nombre",
+      "Reconoce letras del alfabeto",
+      "Lee palabras sencillas"
+    ]
+  },
+  {
+    "nivel": "Primaria",
+    "grado": "1",
+    "campoFormativo": "SABERES Y PENSAMIENTO CIENTÍFICO",
+    "contenido": "Los seres vivos y su entorno",
+    "pda": [
+      "Identifica características de los seres vivos",
+      "Reconoce el entorno natural",
+      "Clasifica seres vivos"
+    ]
+  },
+  {
+    "nivel": "Secundaria",
+    "grado": "1",
+    "campoFormativo": "MATEMATICAS",
+    "contenido": "Números enteros y operaciones básicas",
+    "pda": [
+      "Realiza operaciones con números enteros",
+      "Resuelve problemas matemáticos",
+      "Comprende el valor posicional"
+    ]
+  }
+]
