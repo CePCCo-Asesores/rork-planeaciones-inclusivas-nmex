@@ -62,18 +62,36 @@ function transformGistData(rawData: RawGistStructure): TransformedDataStructure 
       const pdaArray = campoData.pda || [];
       const contenidosArray = campoData.contenidos;
 
+      console.log(`   📊 Campo: ${campoFormativo}`);
+      console.log(`      Contenidos: ${contenidosArray.length}`);
+      console.log(`      PDAs: ${pdaArray.length}`);
+      if (contenidosArray.length > 0) {
+        console.log(`      Primer contenido: "${contenidosArray[0].substring(0, 50)}..."`);
+      }
+      if (pdaArray.length > 0) {
+        console.log(`      Primer PDA: "${pdaArray[0].substring(0, 50)}..."`);
+      }
+
       const byContenido: { [contenido: string]: string[] } = {};
 
       contenidosArray.forEach((contenido, index) => {
         const pdaSet = new Set<string>();
 
         if (pdaArray[index]) {
+          console.log(`         🔗 Contenido[${index}] -> PDA[${index}]`);
+          console.log(`            Contenido: "${contenido.substring(0, 40)}..."`);
+          console.log(`            PDA raw: "${pdaArray[index].substring(0, 40)}..."`);
           const pdaIndividuales = separarPDAs(pdaArray[index]);
+          console.log(`            PDA split: ${pdaIndividuales.length} items`);
           pdaIndividuales.forEach(pda => pdaSet.add(pda));
+        } else {
+          console.warn(`         ⚠️ Contenido[${index}] NO tiene PDA en index ${index}`);
         }
 
         byContenido[contenido] = Array.from(pdaSet);
       });
+
+      console.log(`   ✅ byContenido keys: ${Object.keys(byContenido).length}`);
 
       transformed[gradoKey][campoFormativo] = {
         contenidos: contenidosArray,
