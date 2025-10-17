@@ -24,6 +24,11 @@ import { buildMasterPrompt } from '@/constants/masterPrompt';
 
 type Modalidad = 'Secuencial' | 'Por Proyecto';
 
+interface ContenidoConCampo {
+  contenido: string;
+  campo: string;
+}
+
 interface FormData {
   nombreDocente: string;
   nombreEscuela: string;
@@ -35,7 +40,7 @@ interface FormData {
   duracionSesion: string;
   modalidad: Modalidad;
   camposFormativos: string[];
-  contenidos: string[];
+  contenidos: ContenidoConCampo[];
   pda: string[];
   estrategiasEvaluacion: string[];
   recursosDisponibles: string;
@@ -109,20 +114,19 @@ export default function CreateNewLessonPlanScreen() {
       form.nivelEducativo, 
       form.grado
     );
-    console.log('Contenidos disponibles:', result);
+    console.log('Contenidos disponibles con campo:', result);
     return result;
   }, [form.camposFormativos, form.nivelEducativo, form.grado, getContenidosByCampos]);
 
   const pdaDisponibles = useMemo(() => {
     const result = getPDAByContenidos(
-      form.camposFormativos || [], 
       form.contenidos || [], 
       form.nivelEducativo, 
       form.grado
     );
     console.log('PDAs disponibles:', result);
     return result;
-  }, [form.camposFormativos, form.contenidos, form.nivelEducativo, form.grado, getPDAByContenidos]);
+  }, [form.contenidos, form.nivelEducativo, form.grado, getPDAByContenidos]);
 
   const isCampoMultiple = form.modalidad === 'Por Proyecto';
 
@@ -143,14 +147,17 @@ export default function CreateNewLessonPlanScreen() {
     }
   };
 
-  const handleToggleContenido = (contenido: string) => {
-    setForm(prev => ({
-      ...prev,
-      contenidos: prev.contenidos.includes(contenido)
-        ? prev.contenidos.filter(c => c !== contenido)
-        : [...prev.contenidos, contenido],
-      pda: [],
-    }));
+  const handleToggleContenido = (item: ContenidoConCampo) => {
+    setForm(prev => {
+      const exists = prev.contenidos.some(c => c.contenido === item.contenido && c.campo === item.campo);
+      return {
+        ...prev,
+        contenidos: exists
+          ? prev.contenidos.filter(c => !(c.contenido === item.contenido && c.campo === item.campo))
+          : [...prev.contenidos, item],
+        pda: [],
+      };
+    });
   };
 
   const handleTogglePDA = (pda: string) => {
@@ -234,7 +241,7 @@ export default function CreateNewLessonPlanScreen() {
         modalidad: form.modalidad,
         camposFormativos: form.camposFormativos,
         temaDetonador: form.temaDetonador,
-        contenidos: form.contenidos,
+        contenidos: form.contenidos.map(c => c.contenido),
         pda: form.pda,
         numeroSesiones: form.numeroSesiones,
         duracionSesion: form.duracionSesion,
@@ -253,7 +260,7 @@ export default function CreateNewLessonPlanScreen() {
         subject: form.camposFormativos.join(', '),
         campoFormativo: form.camposFormativos.join(', '),
         ejeArticulador: '',
-        contenidos: form.contenidos.join(', '),
+        contenidos: form.contenidos.map(c => c.contenido).join(', '),
         procesoDesarrollo: form.pda.join(', '),
         duration: `${form.numeroSesiones} sesiones de ${form.duracionSesion} minutos`,
         objectives: form.temaDetonador,
@@ -575,24 +582,27 @@ export default function CreateNewLessonPlanScreen() {
                 </TouchableOpacity>
                 {showContenidosPicker && contenidosDisponibles.length > 0 && (
                   <ScrollView style={[styles.pickerDropdownScrollable, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    {contenidosDisponibles.map((contenido, index) => (
-                      <TouchableOpacity
-                        key={`${contenido}-${index}`}
-                        testID={`contenido-option-${index}`}
-                        style={[
-                          styles.pickerOption,
-                          form.contenidos.includes(contenido) && { backgroundColor: colors.primary + '20' }
-                        ]}
-                        onPress={() => handleToggleContenido(contenido)}
-                      >
-                        <Text style={[
-                          styles.pickerOptionText,
-                          { color: form.contenidos.includes(contenido) ? colors.primary : colors.text }
-                        ]}>
-                          {contenido}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                    {contenidosDisponibles.map((item, index) => {
+                      const isSelected = form.contenidos.some(c => c.contenido === item.contenido && c.campo === item.campo);
+                      return (
+                        <TouchableOpacity
+                          key={`${item.campo}-${item.contenido}-${index}`}
+                          testID={`contenido-option-${index}`}
+                          style={[
+                            styles.pickerOption,
+                            isSelected && { backgroundColor: colors.primary + '20' }
+                          ]}
+                          onPress={() => handleToggleContenido(item)}
+                        >
+                          <Text style={[
+                            styles.pickerOptionText,
+                            { color: isSelected ? colors.primary : colors.text }
+                          ]}>
+                            {item.contenido}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </ScrollView>
                 )}
               </View>

@@ -130,7 +130,7 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
     gcTime: 1000 * 60 * 60 * 24,
   });
 
-  const getContenidosByCampos = useCallback((campos: string[], nivel: string, grado: string): string[] => {
+  const getContenidosByCampos = useCallback((campos: string[], nivel: string, grado: string): Array<{ contenido: string; campo: string }> => {
     console.log('=== getContenidosByCampos called ===');
     console.log('Campos received:', campos);
     console.log('Nivel received:', nivel);
@@ -152,37 +152,36 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
       return [];
     }
 
-    const contenidosSet = new Set<string>();
+    const contenidosConCampo: Array<{ contenido: string; campo: string }> = [];
     
     campos.forEach(campo => {
       const campoData = data[gradoKey]?.[campo];
       console.log(`Campo "${campo}" data:`, campoData);
       
       if (campoData && campoData.contenidos) {
-        campoData.contenidos.forEach(contenido => contenidosSet.add(contenido));
+        campoData.contenidos.forEach(contenido => {
+          contenidosConCampo.push({ contenido, campo });
+        });
       }
     });
 
-    const result = Array.from(contenidosSet);
-    console.log('✅ Total contenidos extracted:', result.length);
-    console.log('Contenidos:', result);
-    return result;
+    console.log('✅ Total contenidos extracted:', contenidosConCampo.length);
+    console.log('Contenidos con campo:', contenidosConCampo);
+    return contenidosConCampo;
   }, [data]);
 
-  const getPDAByContenidos = useCallback((campos: string[], contenidos: string[], nivel: string, grado: string): string[] => {
+  const getPDAByContenidos = useCallback((contenidosConCampo: Array<{ contenido: string; campo: string }>, nivel: string, grado: string): string[] => {
     console.log('=== getPDAByContenidos called ===');
-    console.log('Campos received:', campos);
-    console.log('Contenidos received:', contenidos);
+    console.log('Contenidos con campo received:', contenidosConCampo);
     console.log('Nivel received:', nivel);
     console.log('Grado received:', grado);
     console.log('Data available:', !!data);
     
-    if (!data || typeof data !== 'object' || campos.length === 0 || contenidos.length === 0) {
+    if (!data || typeof data !== 'object' || contenidosConCampo.length === 0) {
       console.log('❌ Early return: No data or no selection', { 
         hasData: !!data,
         isObject: typeof data === 'object',
-        camposCount: campos.length, 
-        contenidosCount: contenidos.length 
+        contenidosCount: contenidosConCampo.length 
       });
       return [];
     }
@@ -197,14 +196,16 @@ export const [CurriculumDataProvider, useCurriculumData] = createContextHook(() 
 
     const pdaSet = new Set<string>();
     
-    campos.forEach(campo => {
+    contenidosConCampo.forEach(({ contenido, campo }) => {
       const campoData = data[gradoKey]?.[campo];
       
       if (campoData && campoData.byContenido) {
-        contenidos.forEach(contenido => {
-          const pdaDeEsteContenido = campoData.byContenido[contenido] || [];
-          console.log(`PDAs for campo "${campo}" contenido "${contenido}":`, pdaDeEsteContenido);
-          pdaDeEsteContenido.forEach(pda => pdaSet.add(pda));
+        const pdaDeEsteContenido = campoData.byContenido[contenido] || [];
+        console.log(`PDAs for campo "${campo}" contenido "${contenido}":`, pdaDeEsteContenido);
+        
+        pdaDeEsteContenido.forEach(cadena => {
+          const pdaIndividuales = separarPDAs(cadena);
+          pdaIndividuales.forEach(pda => pdaSet.add(pda));
         });
       }
     });
